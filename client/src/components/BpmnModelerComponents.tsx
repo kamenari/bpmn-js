@@ -7,12 +7,12 @@ import "bpmn-js/dist/assets/bpmn-js.css"; // BPMN要素のスタイル
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css"; // BPMNアイコンフォントのスタイル
 import "bpmn-js-properties-panel/dist/assets/properties-panel.css"; // プロパティパネルのスタイル
 
-// BpmnViewer02コンポーネントのPropsの型定義
+// BpmnModelerComponentsコンポーネントのPropsの型定義
 interface BpmnModelerComponents {
   xml: string; // 表示するBPMNダイアグラムのXMLデータ
 }
 
-const BpmnViewer02: React.FC<BpmnModelerComponents> = ({ xml }) => {
+const BpmnModelerComponents: React.FC<BpmnModelerComponents> = ({ xml }) => {
   // コンポーネントで使用するrefを作成。BPMNモデラーを表示するためのDOM要素を参照する。
   const ref = useRef<HTMLDivElement>(null);
   // BPMNモデラーのインスタンスを保持するためのref
@@ -70,4 +70,4 @@ const BpmnViewer02: React.FC<BpmnModelerComponents> = ({ xml }) => {
   );
 };
 
-export default BpmnViewer02;
+export default BpmnModelerComponents;
