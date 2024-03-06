@@ -45,5 +45,9 @@
   },
   "resolutions": {
     "jackspeak": "2.1.1"
+  },
+  "compilerOptions": {
+    "typeRoots": ["./node_modules/@types", "./types"],
+    "types": ["inherits"]
   }
 }
