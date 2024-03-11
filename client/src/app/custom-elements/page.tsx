@@ -1,6 +1,5 @@
 "use client";
 import ModelerComponentsAddNewModel from '@/components/ModelerComponentsAddNewModel';
-// BPMN図のXMLデータをインポート
 
 const customElements: React.FC = () => {
 

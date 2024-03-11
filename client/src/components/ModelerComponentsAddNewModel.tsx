@@ -6,7 +6,7 @@ import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css";
 import "bpmn-js/dist/assets/diagram-js.css";
 import "bpmn-js/dist/assets/bpmn-js.css";
 import diagramNew from '@/components/diagramNew';
-import customModules from './AddModel';
+import customModules from '@/components/AddModel';
 
 const modelerStyles = css`
   flex: 1;
