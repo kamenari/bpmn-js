@@ -13,11 +13,14 @@ export default class CustomPalette {
           action: {
             // ドラッグ開始時のアクション
             dragstart: function(event: any) {
-              // カスタムエレメントの作成ロジック
+              const shape = elementFactory.createShape({ type: 'bpmn:Task' });
+              create.start(event, shape);
             },
             // クリック時のアクション
             click: function(event: any) {
-              // キャンバスの特定の位置にエレメントを追加するロジック
+              // キャンバスの特定の位置にエレメントを追加
+              const shape = elementFactory.createShape({ type: 'bpmn:Task' });
+              create.start(event, shape, { x: 100, y: 100 }); 
             }
           }
         }
