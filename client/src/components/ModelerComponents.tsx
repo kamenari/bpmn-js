@@ -6,6 +6,8 @@ import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css";
 import "bpmn-js/dist/assets/diagram-js.css";
 import "bpmn-js/dist/assets/bpmn-js.css";
 
+import diagramXML from "@/components/diagram";
+
 const modelerStyles = css`
   flex: 1;
   overflow: hidden;
@@ -52,8 +54,6 @@ const ModelerPage: React.FC<ModelerPageProps> = () => {
   const canvasRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const diagramUrl =
-      "https://cdn.statically.io/gh/bpmn-io/bpmn-js-examples/dfceecba/starter/diagram.bpmn";
 
     const bpmnModeler = new BpmnJS({
       container: "#canvas",
@@ -88,9 +88,7 @@ const ModelerPage: React.FC<ModelerPageProps> = () => {
       }
     };
 
-    fetch(diagramUrl)
-      .then((response) => response.text())
-      .then((bpmnXML) => openDiagram(bpmnXML));
+    openDiagram(diagramXML);
 
     const saveButton = document.getElementById("save-button");
     if (saveButton) {
