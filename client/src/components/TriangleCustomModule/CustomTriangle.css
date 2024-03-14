@@ -1,0 +1,7 @@
+.icon-custom-triangle::before {
+  content: '';
+  display: block;
+  border-left: 23px solid transparent;
+  border-right: 23px solid transparent;
+  border-bottom: 40px solid black; /* 正三角形の高さを幅の46pxに収まるように調整 */
+}

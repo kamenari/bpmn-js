@@ -7,6 +7,8 @@ import "bpmn-js/dist/assets/diagram-js.css";
 import "bpmn-js/dist/assets/bpmn-js.css";
 import diagramNew from '@/components/diagramNew';
 import customModules from '@/components/AddModel';
+import TriangleCustomModule from '@/components/TriangleCustomModule';
+import { CustomElementsModdle } from '@/components/TriangleCustomModule/CustomElementsModdle';
 
 const modelerStyles = css`
   flex: 1;
@@ -44,8 +46,12 @@ const ModelerPage: React.FC<ModelerPageProps> = () => {
       container: canvasRef.current, // 描画対象のコンテナを指定
       // カスタムモジュールを追加。ここで定義したカスタムモジュールは、BPMN-JSの機能を拡張します。
       additionalModules: [
-        customModules 
-      ]
+        customModules,
+        TriangleCustomModule
+      ],
+      moddleExtensions: {
+        custom: CustomElementsModdle
+      }
     });
 
     // BPMN図を開く関数
