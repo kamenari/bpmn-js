@@ -2,7 +2,8 @@
 import CustomRenderer from './CustomRenderer';
 import CustomContextPad from './CustomContextPad';
 import CustomPalette from './CustomPalette';
-// import CustomTaskBehavior from './CustomTaskBehavior';
+
+import "./addModel.css";
 
 // カスタムモジュールをエクスポートするオブジェクト
 export default {
@@ -11,6 +12,5 @@ export default {
   // 各カスタムモジュールをDIコンテナに登録
   customRenderer: ['type', CustomRenderer],
   customContextPad: ['type', CustomContextPad],
-  customPalette: ['type', CustomPalette],
-  // customTaskBehavior: ['type', CustomTaskBehavior]
+  customPalette: ['type', CustomPalette]
 };
