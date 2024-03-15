@@ -1,7 +1,7 @@
 node_modules/
 public/
 
-# bpmn-js-example-custom-elements-masterディレクトリ内の全てのファイルとディレクトリを無視
+# ディレクトリ内の全てのファイルとディレクトリを無視
 *
 # ただし.gitignoreファイル自体は追跡対象にする
 !.gitignore
