@@ -1,0 +1,6 @@
+.icon-nyan-cat {
+  background-image: url('./cat.gif'); /* catGifPathの実際のパスに置き換えてください */
+  background-size: contain; /* アイコンのサイズに合わせて調整 */
+  background-repeat: no-repeat;
+  background-position: center;
+}

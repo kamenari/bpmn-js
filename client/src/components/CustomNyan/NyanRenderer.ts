@@ -10,17 +10,18 @@ export default class NyanRenderer extends BaseRenderer {
 
   // このレンダラーが描画できる要素タイプを判断
   canRender(element: any) {
-    return element.type === 'bpmn:ServiceTask'; // ニャンキャットを描画する条件
+    return element.type === 'bpmn:Event'; // ニャンキャットを描画する条件
   }
-
+  
   // カスタムニャンキャットをSVGで描画
   drawShape(parentNode: any, element: any) {
+    console.log('catGifPath', catGifPath.src);
     const catGfx = svgCreate('image', {
       x: 0,
       y: 0,
       width: element.width,
       height: element.height,
-      href: catGifPath // 画像パスの使用
+      href: catGifPath.src // 画像パスの使用
     });
 
     svgAppend(parentNode, catGfx);

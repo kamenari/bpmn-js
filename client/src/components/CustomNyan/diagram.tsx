@@ -6,7 +6,7 @@ const diagramXML = `
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>SequenceFlow_1quc928</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_1quc928" sourceRef="StartEvent_1" targetRef="ServiceTask_1agxens" />
+    <bpmn:sequenceFlow id="SequenceFlow_1quc928" sourceRef="StartEvent_1" targetRef="Event_1agxens" />
     <bpmn:task id="Task_09ghys8">
       <bpmn:incoming>SequenceFlow_1uxr9e7</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0x9ulme</bpmn:outgoing>
@@ -15,11 +15,11 @@ const diagramXML = `
       <bpmn:incoming>SequenceFlow_0x9ulme</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_0x9ulme" sourceRef="Task_09ghys8" targetRef="EndEvent_045lzom" />
-    <bpmn:serviceTask id="ServiceTask_1agxens">
+    <bpmn:Event id="Event_1agxens">
       <bpmn:incoming>SequenceFlow_1quc928</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1uxr9e7</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="SequenceFlow_1uxr9e7" sourceRef="ServiceTask_1agxens" targetRef="Task_09ghys8" />
+    </bpmn:Event>
+    <bpmn:sequenceFlow id="SequenceFlow_1uxr9e7" sourceRef="Event_1agxens" targetRef="Task_09ghys8" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
@@ -49,7 +49,7 @@ const diagramXML = `
           <dc:Bounds x="794.5" y="110" width="90" height="20" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ServiceTask_1agxens_di" bpmnElement="ServiceTask_1agxens">
+      <bpmndi:BPMNShape id="Event_1agxens_di" bpmnElement="Event_1agxens">
         <dc:Bounds x="351" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_1uxr9e7_di" bpmnElement="SequenceFlow_1uxr9e7">

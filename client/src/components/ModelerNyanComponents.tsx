@@ -10,7 +10,7 @@ import diagramXML from "@/components/CustomNyan/diagram";
 
 // カスタムモジュールのインポート
 import nyanRenderModule from './CustomNyan/nyanRenderModule';
-import nyanPaletteProvider from './CustomNyan/NyanPaletteProvider';
+
 const modelerStyles = css`
   flex: 1;
   overflow: hidden;
@@ -20,22 +20,6 @@ const modelerStyles = css`
     padding: 0;
     margin: 0;
     width: 100%;
-  }
-
-  .diagram-note {
-    background-color: rgba(66, 180, 21, 0.7);
-    color: White;
-    border-radius: 5px;
-    font-family: Arial;
-    font-size: 12px;
-    padding: 5px;
-    min-height: 16px;
-    width: 50px;
-    text-align: center;
-  }
-
-  .needs-discussion:not(.djs-connection) .djs-visual > :nth-child(1) {
-    stroke: rgba(66, 180, 21, 0.7) !important;
   }
 `;
 
@@ -65,7 +49,6 @@ const ModelerPage: React.FC<ModelerPageProps> = () => {
       },
       additionalModules: [
         nyanRenderModule,
-        nyanPaletteProvider
       ],
     });
 

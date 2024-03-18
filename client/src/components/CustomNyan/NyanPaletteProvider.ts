@@ -4,7 +4,7 @@ export default function NyanPaletteProvider(palette: any, create: any, elementFa
   function createNyanCat(event: any) {
     // ニャンキャットのカスタム要素のビジネスオブジェクトを作成
     const nyanCatShape = elementFactory.createShape({
-      type: 'custom:NyanCat',
+      type: 'bpmn:Event',
       width: 100, // ニャンキャットの幅
       height: 100, // ニャンキャットの高さ
     });
