@@ -8,6 +8,21 @@ import "bpmn-js/dist/assets/bpmn-js.css";
 import diagramXML from "@/components/FormDemo/diagram";
 import nyanRenderModule from "@/components/CustomNyan/nyanRenderModule";
 import ParticipantForm from "@/components/FormDemo/ParticipantForm";
+import TaskForm from "@/components/FormTaskdemo/TaskForm";
+import StartEvent from "@/components/FormEventdemo/StartEvent";
+import EndEvent from "@/components/FormEventdemo/EndEvent";
+import MessageEventDefinition from "@/components/FormMessageEventDefinition/MessageEventDefinition";
+
+// rootWrapのスタイル
+const rootWrapStyles = css`
+  display: flex;
+  height: 100vh;
+  flex-wrap: wrap;
+`;
+
+const formStyles = css`
+  width: 30%;
+`;
 
 // モデラーのスタイル
 const modelerStyles = css`
@@ -26,6 +41,8 @@ const modelerContainerStyles = css`
   display: flex;
   flex-direction: column;
   height: 100vh;
+  width: 70%;
+  background-color: #fff;
 `;
 
 // 保存ボタンのスタイル
@@ -98,21 +115,135 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
       const modeling = modeler.get("modeling");
       const canvas = modeler.get("canvas");
 
-      const participant = elementFactory.createParticipantShape({ name: participantName });
-      await modeling.createShape(participant, { x: 50, y: 50 }, canvas.getRootElement());
+      const participant = elementFactory.createParticipantShape({
+        name: participantName,
+      });
+      await modeling.createShape(
+        participant,
+        { x: 50, y: 50 },
+        canvas.getRootElement()
+      );
+    }
+  };
+
+  // タスクの追加
+  const handleTaskSubmit = async (taskName: string) => {
+    console.log("タスク名:", taskName);
+    const modeler = bpmnModelerRef.current;
+    if (modeler) {
+      const elementFactory = modeler.get("elementFactory");
+      const modeling = modeler.get("modeling");
+      const canvas = modeler.get("canvas");
+
+      const task = elementFactory.createShape({ type: "bpmn:Task" });
+      const taskShape = await modeling.createShape(
+        task,
+        { x: 100, y: 100 },
+        canvas.getRootElement()
+      );
+      modeling.updateProperties(taskShape, { name: taskName });
+      console.log("タスクシェイプ:", taskShape);
+    }
+  };
+
+  // スタートイベントの追加
+  const handleStartEventSubmit = async (eventName: string) => {
+    console.log("イベント名:", eventName);
+    const modeler = bpmnModelerRef.current;
+    if (modeler) {
+      const elementFactory = modeler.get("elementFactory");
+      const modeling = modeler.get("modeling");
+      const canvas = modeler.get("canvas");
+
+      const event = elementFactory.createShape({ type: "bpmn:StartEvent" });
+      const eventShape = await modeling.createShape(
+        event,
+        { x: 150, y: 150 },
+        canvas.getRootElement()
+      );
+      modeling.updateProperties(eventShape, { name: eventName });
+      console.log("イベントシェイプ:", eventShape);
+    }
+  };
+
+  // エンドイベントの追加
+  const handleEndEventSubmit = async (eventName: string) => {
+    console.log("イベント名:", eventName);
+    const modeler = bpmnModelerRef.current;
+    if (modeler) {
+      const elementFactory = modeler.get("elementFactory");
+      const modeling = modeler.get("modeling");
+      const canvas = modeler.get("canvas");
+
+      const event = elementFactory.createShape({ type: "bpmn:EndEvent" });
+      const eventShape = await modeling.createShape(
+        event,
+        { x: 150, y: 150 },
+        canvas.getRootElement()
+      );
+      modeling.updateProperties(eventShape, { name: eventName });
+      console.log("イベントシェイプ:", eventShape);
+    }
+  };
+
+  // イベントの追加
+  const handleEventSubmit = async (eventType: string, messageName: string) => {
+    console.log("イベントタイプ:", eventType);
+    console.log("メッセージ名:", messageName);
+    const modeler = bpmnModelerRef.current;
+    if (modeler) {
+      const elementFactory = modeler.get("elementFactory");
+      const modeling = modeler.get("modeling");
+      const canvas = modeler.get("canvas");
+      const bpmnFactory = modeler.get("bpmnFactory");
+
+      const event = elementFactory.createShape({ type: eventType });
+      const eventShape = await modeling.createShape(
+        event,
+        { x: 150, y: 150 },
+        canvas.getRootElement()
+      );
+
+      if (messageName) {
+        const messageEventDefinition = bpmnFactory.create(
+          "bpmn:MessageEventDefinition",
+          {
+            messageRef: bpmnFactory.create("bpmn:Message", {
+              name: messageName,
+            }),
+          }
+        );
+        modeling.updateProperties(eventShape, {
+          eventDefinitions: [messageEventDefinition],
+        });
+      }
+
+      console.log("イベントシェイプ:", eventShape);
     }
   };
 
   return (
-    <div css={modelerContainerStyles}>
-      {/* 参加者追加フォーム */}
-      <ParticipantForm onSubmit={handleParticipantSubmit} />
-      {/* BPMNモデラー */}
-      <div id="canvas" ref={canvasRef} css={modelerStyles} />
-      {/* 保存ボタン */}
-      <button id="save-button" css={saveButtonStyles} onClick={exportDiagram}>
-        Print to Console
-      </button>
+    <div css={rootWrapStyles}>
+      <div css={modelerContainerStyles}>
+        {/* BPMNモデラー */}
+        <div id="canvas" ref={canvasRef} css={modelerStyles} />
+        {/* 保存ボタン */}
+        <button id="save-button" css={saveButtonStyles} onClick={exportDiagram}>
+          Print to Console
+        </button>
+      </div>
+      <div css={formStyles}>
+        {/* 参加者追加フォーム */}
+        <ParticipantForm onSubmit={handleParticipantSubmit} />
+        {/* タスク追加フォーム */}
+        <TaskForm onSubmit={handleTaskSubmit} />
+        {/* スタートイベント追加フォーム */}
+        <StartEvent onSubmit={handleStartEventSubmit} />
+        {/* エンドイベント追加フォーム */}
+        <EndEvent onSubmit={handleEndEventSubmit} />
+        {/* メールイベント追加フォーム */}
+        <MessageEventDefinition onSubmit={handleEventSubmit} />
+      </div>
     </div>
   );
 };
