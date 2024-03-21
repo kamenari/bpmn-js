@@ -34,7 +34,7 @@ const EventForm: React.FC<EventFormProps> = ({ onSubmit }) => {
         <option value="bpmn:IntermediateThrowEvent">中間イベント（投げ）</option>
         <option value="bpmn:IntermediateCatchEvent">中間イベント（受け）</option>
       </select>
-      <label htmlFor="messageName">メッセージ名:</label>
+      <label htmlFor="messageName">メッセージ名（オプション）:</label>
       <input
         type="text"
         id="messageName"

@@ -1,5 +1,5 @@
 /** @jsxImportSource @emotion/react */
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { css } from "@emotion/react";
 import BpmnJS from "bpmn-js/dist/bpmn-modeler.production.min.js";
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css";
@@ -12,6 +12,9 @@ import TaskForm from "@/components/FormTaskdemo/TaskForm";
 import StartEvent from "@/components/FormEventdemo/StartEvent";
 import EndEvent from "@/components/FormEventdemo/EndEvent";
 import MessageEventDefinition from "@/components/FormMessageEventDefinition/MessageEventDefinition";
+import ConnectionForm from "@/components/ConnectionForm";
+import IntermediateThrowEventForm from "@/components/IntermediateThrowEvent/IntermediateThrowEvent";
+import IntermediateCatchEventForm from "@/components/IntermediateCatchEvent/IntermediateCatchEvent";
 
 // rootWrapのスタイル
 const rootWrapStyles = css`
@@ -57,9 +60,18 @@ interface BpmnModelerProps {
   onXmlChange: (xml: string) => void;
 }
 
+// イベントフォームのプロパティを定義するインターフェース
+interface EventFormProps {
+  onSubmit: (eventType: string, messageName: string) => void; // フォーム送信時に呼び出されるコールバック関数
+}
+
 const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const bpmnModelerRef = useRef<any>(null);
+
+  const [elements, setElements] = useState<
+    Array<{ id: string; type: string; name: string }>
+  >([]);
 
   useEffect(() => {
     // BPMNモデラーの初期化
@@ -107,6 +119,64 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
     }
   };
 
+  // 接続の追加
+  const handleConnectionSubmit = async (sourceId: string, targetId: string) => {
+    const modeler = bpmnModelerRef.current;
+    if (modeler) {
+      const elementRegistry = modeler.get("elementRegistry");
+      const modeling = modeler.get("modeling");
+
+      const sourceElement = elementRegistry.get(sourceId);
+      const targetElement = elementRegistry.get(targetId);
+
+      if (sourceElement && targetElement) {
+        modeling.connect(sourceElement, targetElement);
+      }
+    }
+  };
+
+  // 要素の追加時にelementsステートを更新
+  // useEffect(() => {
+  //   const modeler = bpmnModelerRef.current;
+  //   if (modeler) {
+  //     const elementRegistry = modeler.get("elementRegistry");
+  //     const elements = elementRegistry.filter(
+  //       (element: any) =>
+  //         element.type === "bpmn:StartEvent" ||
+  //         element.type === "bpmn:Task" ||
+  //         element.type === "bpmn:EndEvent"
+  //     );
+  //     setElements(
+  //       elements.map((element: any) => ({
+  //         id: element.id,
+  //         type: element.type,
+  //         name: element.businessObject.name || "",
+  //       }))
+  //     );
+  //   }
+  // }, [xml]);
+
+  // 要素リストの更新
+  const updateElements = () => {
+    const modeler = bpmnModelerRef.current;
+    if (modeler) {
+      const elementRegistry = modeler.get("elementRegistry");
+      const elements = elementRegistry.filter(
+        (element: any) =>
+          element.type === "bpmn:StartEvent" ||
+          element.type === "bpmn:Task" ||
+          element.type === "bpmn:EndEvent"
+      );
+      setElements(
+        elements.map((element: any) => ({
+          id: element.id,
+          type: element.type,
+          name: element.businessObject.name || "",
+        }))
+      );
+    }
+  };
+
   // 参加者の追加
   const handleParticipantSubmit = async (participantName: string) => {
     const modeler = bpmnModelerRef.current;
@@ -123,7 +193,12 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
         { x: 50, y: 50 },
         canvas.getRootElement()
       );
+      setElements((prevElements) => [
+        ...prevElements,
+        { id: participant.id, type: participant.type, name: participantName },
+      ]);
     }
+    updateElements();
   };
 
   // タスクの追加
@@ -143,7 +218,12 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
       );
       modeling.updateProperties(taskShape, { name: taskName });
       console.log("タスクシェイプ:", taskShape);
+      setElements((prevElements) => [
+        ...prevElements,
+        { id: taskShape.id, type: "bpmn:Task", name: taskName },
+      ]);
     }
+    updateElements();
   };
 
   // スタートイベントの追加
@@ -164,6 +244,7 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
       modeling.updateProperties(eventShape, { name: eventName });
       console.log("イベントシェイプ:", eventShape);
     }
+    updateElements();
   };
 
   // エンドイベントの追加
@@ -184,12 +265,12 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
       modeling.updateProperties(eventShape, { name: eventName });
       console.log("イベントシェイプ:", eventShape);
     }
+    updateElements();
   };
 
-  // イベントの追加
-  const handleEventSubmit = async (eventType: string, messageName: string) => {
-    console.log("イベントタイプ:", eventType);
-    console.log("メッセージ名:", messageName);
+  // 中間イベント（投げ）の追加
+  const handleIntermediateThrowEventSubmit = async (eventName: string) => {
+    console.log("イベント名:", eventName);
     const modeler = bpmnModelerRef.current;
     if (modeler) {
       const elementFactory = modeler.get("elementFactory");
@@ -197,29 +278,60 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
       const canvas = modeler.get("canvas");
       const bpmnFactory = modeler.get("bpmnFactory");
 
-      const event = elementFactory.createShape({ type: eventType });
+      const event = elementFactory.createShape({
+        type: "bpmn:IntermediateThrowEvent",
+      });
       const eventShape = await modeling.createShape(
         event,
         { x: 150, y: 150 },
         canvas.getRootElement()
       );
+      modeling.updateProperties(eventShape, { name: eventName });
 
-      if (messageName) {
-        const messageEventDefinition = bpmnFactory.create(
-          "bpmn:MessageEventDefinition",
-          {
-            messageRef: bpmnFactory.create("bpmn:Message", {
-              name: messageName,
-            }),
-          }
-        );
-        modeling.updateProperties(eventShape, {
-          eventDefinitions: [messageEventDefinition],
-        });
-      }
+      // メッセージイベント定義の追加
+      const messageEventDefinition = bpmnFactory.create(
+        "bpmn:MessageEventDefinition"
+      );
+      modeling.updateProperties(eventShape, {
+        eventDefinitions: [messageEventDefinition],
+      });
 
       console.log("イベントシェイプ:", eventShape);
     }
+    updateElements();
+  };
+
+  // 中間イベント（受け）の追加
+  const handleIntermediateCatchEventSubmit = async (eventName: string) => {
+    console.log("イベント名:", eventName);
+    const modeler = bpmnModelerRef.current;
+    if (modeler) {
+      const elementFactory = modeler.get("elementFactory");
+      const modeling = modeler.get("modeling");
+      const canvas = modeler.get("canvas");
+      const bpmnFactory = modeler.get("bpmnFactory");
+
+      const event = elementFactory.createShape({
+        type: "bpmn:IntermediateCatchEvent",
+      });
+      const eventShape = await modeling.createShape(
+        event,
+        { x: 150, y: 150 },
+        canvas.getRootElement()
+      );
+      modeling.updateProperties(eventShape, { name: eventName });
+
+      // メッセージイベント定義の追加
+      const messageEventDefinition = bpmnFactory.create(
+        "bpmn:MessageEventDefinition"
+      );
+      modeling.updateProperties(eventShape, {
+        eventDefinitions: [messageEventDefinition],
+      });
+
+      console.log("イベントシェイプ:", eventShape);
+    }
+    updateElements();
   };
 
   return (
@@ -241,8 +353,15 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
         <StartEvent onSubmit={handleStartEventSubmit} />
         {/* エンドイベント追加フォーム */}
         <EndEvent onSubmit={handleEndEventSubmit} />
-        {/* メールイベント追加フォーム */}
-        <MessageEventDefinition onSubmit={handleEventSubmit} />
+        {/* 中間イベント（投げ）追加フォーム */}
+        <IntermediateThrowEventForm
+          onSubmit={handleIntermediateThrowEventSubmit}
+        />
+        {/* 中間イベント（受け）追加フォーム */}
+        <IntermediateCatchEventForm
+          onSubmit={handleIntermediateCatchEventSubmit}
+        />
+        <ConnectionForm elements={elements} onSubmit={handleConnectionSubmit} />
       </div>
     </div>
   );
