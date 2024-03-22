@@ -7,11 +7,11 @@ import "bpmn-js/dist/assets/diagram-js.css";
 import "bpmn-js/dist/assets/bpmn-js.css";
 import diagramXML from "@/components/FormDemo/diagram";
 import nyanRenderModule from "@/components/CustomNyan/nyanRenderModule";
+import NyanForm from "@/components/NyanForm/NyanForm";
 import ParticipantForm from "@/components/FormDemo/ParticipantForm";
 import TaskForm from "@/components/FormTaskdemo/TaskForm";
 import StartEvent from "@/components/FormEventdemo/StartEvent";
 import EndEvent from "@/components/FormEventdemo/EndEvent";
-import MessageEventDefinition from "@/components/FormMessageEventDefinition/MessageEventDefinition";
 import ConnectionForm from "@/components/ConnectionForm";
 import IntermediateThrowEventForm from "@/components/IntermediateThrowEvent/IntermediateThrowEvent";
 import IntermediateCatchEventForm from "@/components/IntermediateCatchEvent/IntermediateCatchEvent";
@@ -58,11 +58,6 @@ const saveButtonStyles = css`
 interface BpmnModelerProps {
   xml: string;
   onXmlChange: (xml: string) => void;
-}
-
-// イベントフォームのプロパティを定義するインターフェース
-interface EventFormProps {
-  onSubmit: (eventType: string, messageName: string) => void; // フォーム送信時に呼び出されるコールバック関数
 }
 
 const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
@@ -119,59 +114,87 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
     }
   };
 
-  // 接続の追加
-  const handleConnectionSubmit = async (sourceId: string, targetId: string) => {
+  // 接続を追加する関数
+  const handleConnect = async (sourceId: string, targetId: string) => {
     const modeler = bpmnModelerRef.current;
     if (modeler) {
-      const elementRegistry = modeler.get("elementRegistry");
-      const modeling = modeler.get("modeling");
+      const elementRegistry = modeler.get("elementRegistry"); // 要素のレジストリを取得
+      const modeling = modeler.get("modeling"); // モデリングのインスタンスを取得
 
-      const sourceElement = elementRegistry.get(sourceId);
-      const targetElement = elementRegistry.get(targetId);
+      const sourceElement = elementRegistry.get(sourceId); // 接続元の要素を取得
+      const targetElement = elementRegistry.get(targetId); // 接続先の要素を取得
 
-      if (sourceElement && targetElement) {
-        modeling.connect(sourceElement, targetElement);
+      // 接続元と接続先の要素が存在し、有効な接続の組み合わせである場合に接続を行う
+      if (
+        sourceElement &&
+        targetElement &&
+        isValidConnection(sourceElement.type, targetElement.type)
+      ) {
+        modeling.connect(sourceElement, targetElement); // 接続を作成（ここで実際に図形要素間の接続が行われる）
       }
     }
   };
 
-  // 要素の追加時にelementsステートを更新
-  // useEffect(() => {
-  //   const modeler = bpmnModelerRef.current;
-  //   if (modeler) {
-  //     const elementRegistry = modeler.get("elementRegistry");
-  //     const elements = elementRegistry.filter(
-  //       (element: any) =>
-  //         element.type === "bpmn:StartEvent" ||
-  //         element.type === "bpmn:Task" ||
-  //         element.type === "bpmn:EndEvent"
-  //     );
-  //     setElements(
-  //       elements.map((element: any) => ({
-  //         id: element.id,
-  //         type: element.type,
-  //         name: element.businessObject.name || "",
-  //       }))
-  //     );
-  //   }
-  // }, [xml]);
+  // 有効な接続の組み合わせかどうかを判定する関数
+  const isValidConnection = (sourceType: string, targetType: string) => {
+    const validConnections: { [key: string]: string[] } = {
+      "bpmn:StartEvent": [
+        "bpmn:Task",
+        "bpmn:IntermediateThrowEvent",
+        "bpmn:IntermediateCatchEvent",
+        "bpmn:Event",
+      ],
+      "bpmn:Task": [
+        "bpmn:Task",
+        "bpmn:IntermediateThrowEvent",
+        "bpmn:IntermediateCatchEvent",
+        "bpmn:Event",
+      ],
+      "bpmn:IntermediateThrowEvent": [
+        "bpmn:Task",
+        "bpmn:IntermediateThrowEvent",
+        "bpmn:IntermediateCatchEvent",
+        "bpmn:Event",
+      ],
+      "bpmn:IntermediateCatchEvent": [
+        "bpmn:Task",
+        "bpmn:IntermediateThrowEvent",
+        "bpmn:IntermediateCatchEvent",
+        "bpmn:Event",
+      ],
+      "bpmn:Event": [
+        "bpmn:Task",
+        "bpmn:IntermediateThrowEvent",
+        "bpmn:IntermediateCatchEvent",
+        "bpmn:Event",
+      ],
+    };
 
-  // 要素リストの更新
+    return validConnections[sourceType]?.includes(targetType) || false; // 接続元と接続先の要素タイプが有効な組み合わせかどうかを判定
+  };
+
+  // 要素のリストを更新する関数（この関数で更新された要素のリストがConnectionFormに渡される）
   const updateElements = () => {
     const modeler = bpmnModelerRef.current;
     if (modeler) {
-      const elementRegistry = modeler.get("elementRegistry");
+      const elementRegistry = modeler.get("elementRegistry"); // 要素のレジストリを取得
+      const elementTypes = [
+        "bpmn:StartEvent",
+        "bpmn:Task",
+        "bpmn:IntermediateThrowEvent",
+        "bpmn:IntermediateCatchEvent",
+        "bpmn:EndEvent",
+        "bpmn:Event",
+      ];
       const elements = elementRegistry.filter(
-        (element: any) =>
-          element.type === "bpmn:StartEvent" ||
-          element.type === "bpmn:Task" ||
-          element.type === "bpmn:EndEvent"
+        (element: any) => elementTypes.includes(element.type) // 指定した要素タイプのみをフィルタリング
       );
       setElements(
         elements.map((element: any) => ({
           id: element.id,
           type: element.type,
-          name: element.businessObject.name || "",
+          name:
+            element.businessObject.name || element.type.replace("bpmn:", ""), // 要素の名前を取得（ない場合はタイプから生成）
         }))
       );
     }
@@ -334,6 +357,41 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
     updateElements();
   };
 
+  // ニャンキャットの追加
+  const handleNyanSubmit = async () => {
+    const modeler = bpmnModelerRef.current;
+    if (modeler) {
+      const elementFactory = modeler.get("elementFactory");
+      const create = modeler.get("create");
+      const canvas = modeler.get("canvas");
+      const modeling = modeler.get("modeling");
+
+      // ニャンキャットのカスタム要素のビジネスオブジェクトを作成
+      const nyanCatShape = elementFactory.createShape({
+        type: "bpmn:Event",
+        width: 100, // ニャンキャットの幅
+        height: 100, // ニャンキャットの高さ
+      });
+
+      // カスタム要素の位置を設定
+      const position = {
+        x: Math.floor(Math.random() * 500), // ランダムなX座標（0〜499）
+        y: Math.floor(Math.random() * 500), // ランダムなY座標（0〜499）
+      };
+
+      // 指定した位置にカスタム要素を作成
+      const createdShape = await modeling.createShape(
+        nyanCatShape,
+        position,
+        canvas.getRootElement()
+      );
+      modeling.updateProperties(createdShape, {
+        name: "Nyan Cat",
+      });
+    }
+    updateElements();
+  };
+
   return (
     <div css={rootWrapStyles}>
       <div css={modelerContainerStyles}>
@@ -361,7 +419,9 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
         <IntermediateCatchEventForm
           onSubmit={handleIntermediateCatchEventSubmit}
         />
-        <ConnectionForm elements={elements} onSubmit={handleConnectionSubmit} />
+        {/* ニャンキャット追加フォーム */}
+        <NyanForm onSubmit={handleNyanSubmit} />
+        <ConnectionForm elements={elements} onConnect={handleConnect} />
       </div>
     </div>
   );

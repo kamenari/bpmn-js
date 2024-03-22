@@ -26,6 +26,13 @@ export default class NyanRenderer extends BaseRenderer {
 
     svgAppend(parentNode, catGfx);
 
+    // コネクションのソースおよびターゲットの装飾を追加
+    const connectorsGfx = svgCreate('g', {
+      class: 'djs-connectors'
+    });
+
+    svgAppend(parentNode, connectorsGfx);
+
     return catGfx; // 作成したニャンキャットのSVG要素を返す
   }
 }
