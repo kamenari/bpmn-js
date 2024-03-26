@@ -15,7 +15,7 @@ import EndEvent from "@/components/FormEventdemo/EndEvent";
 import ConnectionForm from "@/components/ConnectionForm";
 import IntermediateThrowEventForm from "@/components/IntermediateThrowEvent/IntermediateThrowEvent";
 import IntermediateCatchEventForm from "@/components/IntermediateCatchEvent/IntermediateCatchEvent";
-import LaneSelector from '@/components/LaneSelector/LaneSelector';
+import LaneSelector from "@/components/LaneSelector/LaneSelector";
 
 // rootWrapのスタイル
 const rootWrapStyles = css`
@@ -65,7 +65,7 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const bpmnModelerRef = useRef<any>(null);
 
-  // 
+  //
   const [elements, setElements] = useState<
     Array<{ id: string; type: string; name: string }>
   >([]);
@@ -81,9 +81,6 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
     // BPMNモデラーの初期化
     bpmnModelerRef.current = new BpmnJS({
       container: "#canvas",
-      keyboard: {
-        bindTo: window,
-      },
       additionalModules: [nyanRenderModule],
     });
 
@@ -187,11 +184,13 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
     const modeler = bpmnModelerRef.current;
     if (modeler) {
       const elementRegistry = modeler.get("elementRegistry"); // 要素のレジストリを取得
-      const participants = elementRegistry.filter((element: any) => element.type === 'bpmn:Participant');
+      const participants = elementRegistry.filter(
+        (element: any) => element.type === "bpmn:Participant"
+      );
       setLanes(
         participants.map((participant: any) => ({
           id: participant.id,
-          name: participant.businessObject.name || '',
+          name: participant.businessObject.name || "",
         }))
       );
 
@@ -212,64 +211,73 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
           type: element.type,
           name:
             element.businessObject.name || element.type.replace("bpmn:", ""), // 要素の名前を取得（ない場合はタイプから生成）
-          onClick: handleLaneClick, 
+          onClick: handleLaneClick,
         }))
       );
     }
   };
 
   // 参加者の追加
-const handleParticipantSubmit = async (participantName: string) => {
-  const modeler = bpmnModelerRef.current;
-  if (modeler) {
-    const elementFactory = modeler.get("elementFactory");
-    const modeling = modeler.get("modeling");
-    const canvas = modeler.get("canvas");
-    const bpmnFactory = modeler.get("bpmnFactory");
+  const handleParticipantSubmit = async (participantName: string) => {
+    const modeler = bpmnModelerRef.current;
+    if (modeler) {
+      const elementFactory = modeler.get("elementFactory");
+      const modeling = modeler.get("modeling");
+      const canvas = modeler.get("canvas");
+      const bpmnFactory = modeler.get("bpmnFactory");
 
-    // 新しいプロセスを作成
-    const process = bpmnFactory.create("bpmn:Process", {
-      id: `Process_${Date.now()}`,
-      isExecutable: false,
-    });
+      // 新しいプロセスを作成
+      const process = bpmnFactory.create("bpmn:Process", {
+        id: `Process_${Date.now()}`,
+        isExecutable: false,
+      });
 
-    // 新しい参加者を作成
-    const participant = bpmnFactory.create("bpmn:Participant", {
-      id: `Participant_${Date.now()}`,
-      name: participantName,
-      processRef: process.id,
-    });
+      // 新しい参加者を作成
+      const participant = bpmnFactory.create("bpmn:Participant", {
+        id: `Participant_${Date.now()}`,
+        name: participantName,
+        processRef: process.id,
+      });
 
-    // 新しいコラボレーションを作成
-    const collaboration = bpmnFactory.create("bpmn:Collaboration", {
-      id: `Collaboration_${Date.now()}`,
-      participants: [participant],
-    });
+      // 新しいコラボレーションを作成
+      const collaboration = bpmnFactory.create("bpmn:Collaboration", {
+        id: `Collaboration_${Date.now()}`,
+        participants: [participant],
+      });
 
-    // ルート要素を取得
-    const rootElement = canvas.getRootElement();
+      // ルート要素を取得
+      const rootElement = canvas.getRootElement();
 
-    // ルート要素にコラボレーションを追加
-    modeling.updateProperties(rootElement, {
-      businessObject: collaboration,
-    });
+      // ルート要素にコラボレーションを追加
+      modeling.updateProperties(rootElement, {
+        businessObject: collaboration,
+      });
 
-    // 参加者シェイプを作成
-    const participantShape = elementFactory.createShape({
-      type: "bpmn:Participant",
-      businessObject: participant,
-    });
+      // 参加者シェイプを作成
+      const participantShape = elementFactory.createShape({
+        type: "bpmn:Participant",
+        businessObject: participant,
+      });
 
-    // 参加者シェイプをキャンバスに追加
-    await modeling.createShape(participantShape, { x: 100, y: 100 }, rootElement);
+      // キャンバスの中心座標を取得
+      const viewbox = canvas.viewbox();
+      const centerX = viewbox.x + viewbox.width / 2;
+      const centerY = viewbox.y + viewbox.height / 2;
 
-    setElements((prevElements) => [
-      ...prevElements,
-      { id: participant.id, type: participant.$type, name: participantName },
-    ]);
-  }
-  updateElements();
-};
+      // 参加者シェイプをキャンバスの中心に配置
+      await modeling.createShape(
+        participantShape,
+        { x: centerX, y: centerY },
+        rootElement
+      );
+
+      setElements((prevElements) => [
+        ...prevElements,
+        { id: participant.id, type: participant.$type, name: participantName },
+      ]);
+    }
+    updateElements();
+  };
 
   // タスクの追加
   const handleTaskSubmit = async (taskName: string) => {
@@ -305,12 +313,16 @@ const handleParticipantSubmit = async (participantName: string) => {
       const modeling = modeler.get("modeling");
       const canvas = modeler.get("canvas");
       const elementRegistry = modeler.get("elementRegistry");
-  
+
       const laneShape = elementRegistry.get(selectedLaneId);
-  
+
       if (laneShape) {
         const event = elementFactory.createShape({ type: "bpmn:StartEvent" });
-        const eventShape = await modeling.createShape(event, { x: 150, y: 150 }, laneShape);
+        const eventShape = await modeling.createShape(
+          event,
+          { x: 150, y: 150 },
+          laneShape
+        );
         modeling.updateProperties(eventShape, { name: eventName });
         console.log("イベントシェイプ:", eventShape);
       }
@@ -456,7 +468,10 @@ const handleParticipantSubmit = async (participantName: string) => {
         {/* タスク追加フォーム */}
         <TaskForm onSubmit={handleTaskSubmit} />
         {/* スタートイベント追加フォーム */}
-        <StartEvent onSubmit={handleStartEventSubmit} disabled={!selectedLaneId} />
+        <StartEvent
+          onSubmit={handleStartEventSubmit}
+          disabled={!selectedLaneId}
+        />
         {/* エンドイベント追加フォーム */}
         <EndEvent onSubmit={handleEndEventSubmit} />
         {/* 中間イベント（投げ）追加フォーム */}
