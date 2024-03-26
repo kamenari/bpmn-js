@@ -311,16 +311,22 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
     if (modeler && selectedLaneId) {
       const elementFactory = modeler.get("elementFactory");
       const modeling = modeler.get("modeling");
-      const canvas = modeler.get("canvas");
       const elementRegistry = modeler.get("elementRegistry");
 
       const laneShape = elementRegistry.get(selectedLaneId);
 
       if (laneShape) {
         const event = elementFactory.createShape({ type: "bpmn:StartEvent" });
+
+        // スタートイベントの位置を計算
+        const laneX = laneShape.x;
+        const laneY = laneShape.y;
+        const eventX = laneX + 60; // レーンの左端から50ピクセルの位置に配置
+        const eventY = laneY + 30; // レーンの上端から50ピクセルの位置に配置
+
         const eventShape = await modeling.createShape(
           event,
-          { x: 150, y: 150 },
+          { x: eventX, y: eventY },
           laneShape
         );
         modeling.updateProperties(eventShape, { name: eventName });
@@ -420,34 +426,49 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
   // ニャンキャットの追加
   const handleNyanSubmit = async () => {
     const modeler = bpmnModelerRef.current;
-    if (modeler) {
+    if (modeler && selectedLaneId) {
       const elementFactory = modeler.get("elementFactory");
       const create = modeler.get("create");
-      const canvas = modeler.get("canvas");
       const modeling = modeler.get("modeling");
+      const elementRegistry = modeler.get("elementRegistry");
 
-      // ニャンキャットのカスタム要素のビジネスオブジェクトを作成
-      const nyanCatShape = elementFactory.createShape({
-        type: "bpmn:Event",
-        width: 100, // ニャンキャットの幅
-        height: 100, // ニャンキャットの高さ
-      });
+      const laneShape = elementRegistry.get(selectedLaneId);
 
-      // カスタム要素の位置を設定
-      const position = {
-        x: Math.floor(Math.random() * 500), // ランダムなX座標（0〜499）
-        y: Math.floor(Math.random() * 500), // ランダムなY座標（0〜499）
-      };
+      if (laneShape) {
+        // ニャンキャットのカスタム要素のビジネスオブジェクトを作成
+        const nyanCatShape = elementFactory.createShape({
+          type: "bpmn:Event",
+          width: 36, // ニャンキャットの幅
+          height: 36, // ニャンキャットの高さ
+        });
 
-      // 指定した位置にカスタム要素を作成
-      const createdShape = await modeling.createShape(
-        nyanCatShape,
-        position,
-        canvas.getRootElement()
-      );
-      modeling.updateProperties(createdShape, {
-        name: "Nyan Cat",
-      });
+        // レーン内の要素を取得
+        const laneElements = elementRegistry.filter(
+          (element: any) => element.parent === laneShape
+        );
+
+        // ニャンキャットの位置を計算
+        const laneX = laneShape.x;
+        let nyanCatX = laneX + 50; // レーンの左端から50ピクセルの位置に配置
+        let nyanCatY = laneShape.y + 50; // レーンの上端から50ピクセルの位置に配置
+
+        if (laneElements.length > 0) {
+          // レーン内に要素が存在する場合
+          const lastElement = laneElements[laneElements.length - 1];
+          nyanCatX = lastElement.x + lastElement.width + 50; // 最後の要素の右端から30ピクセル右に配置
+          nyanCatY = lastElement.y; // 最後の要素と同じ高さに配置
+        }
+
+        // 指定した位置にニャンキャットを作成
+        const createdShape = await modeling.createShape(
+          nyanCatShape,
+          { x: nyanCatX, y: nyanCatY },
+          laneShape
+        );
+        modeling.updateProperties(createdShape, {
+          name: "Nyan Cat",
+        });
+      }
     }
     updateElements();
   };
@@ -467,6 +488,12 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
         <ParticipantForm onSubmit={handleParticipantSubmit} />
         {/* タスク追加フォーム */}
         <TaskForm onSubmit={handleTaskSubmit} />
+        {/* レーンセレクター */}
+        <LaneSelector
+          lanes={lanes}
+          selectedLaneId={selectedLaneId}
+          onLaneSelect={setSelectedLaneId}
+        />
         {/* スタートイベント追加フォーム */}
         <StartEvent
           onSubmit={handleStartEventSubmit}
@@ -484,11 +511,7 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
         />
         {/* ニャンキャット追加フォーム */}
         <NyanForm onSubmit={handleNyanSubmit} />
-        <LaneSelector
-          lanes={lanes}
-          selectedLaneId={selectedLaneId}
-          onLaneSelect={setSelectedLaneId}
-        />
+
         <ConnectionForm elements={elements} onConnect={handleConnect} />
       </div>
     </div>
