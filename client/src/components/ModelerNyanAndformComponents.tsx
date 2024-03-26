@@ -201,28 +201,57 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
   };
 
   // 参加者の追加
-  const handleParticipantSubmit = async (participantName: string) => {
-    const modeler = bpmnModelerRef.current;
-    if (modeler) {
-      const elementFactory = modeler.get("elementFactory");
-      const modeling = modeler.get("modeling");
-      const canvas = modeler.get("canvas");
+const handleParticipantSubmit = async (participantName: string) => {
+  const modeler = bpmnModelerRef.current;
+  if (modeler) {
+    const elementFactory = modeler.get("elementFactory");
+    const modeling = modeler.get("modeling");
+    const canvas = modeler.get("canvas");
+    const bpmnFactory = modeler.get("bpmnFactory");
 
-      const participant = elementFactory.createParticipantShape({
-        name: participantName,
-      });
-      await modeling.createShape(
-        participant,
-        { x: 50, y: 50 },
-        canvas.getRootElement()
-      );
-      setElements((prevElements) => [
-        ...prevElements,
-        { id: participant.id, type: participant.type, name: participantName },
-      ]);
-    }
-    updateElements();
-  };
+    // 新しいプロセスを作成
+    const process = bpmnFactory.create("bpmn:Process", {
+      id: `Process_${Date.now()}`,
+      isExecutable: false,
+    });
+
+    // 新しい参加者を作成
+    const participant = bpmnFactory.create("bpmn:Participant", {
+      id: `Participant_${Date.now()}`,
+      name: participantName,
+      processRef: process.id,
+    });
+
+    // 新しいコラボレーションを作成
+    const collaboration = bpmnFactory.create("bpmn:Collaboration", {
+      id: `Collaboration_${Date.now()}`,
+      participants: [participant],
+    });
+
+    // ルート要素を取得
+    const rootElement = canvas.getRootElement();
+
+    // ルート要素にコラボレーションを追加
+    modeling.updateProperties(rootElement, {
+      businessObject: collaboration,
+    });
+
+    // 参加者シェイプを作成
+    const participantShape = elementFactory.createShape({
+      type: "bpmn:Participant",
+      businessObject: participant,
+    });
+
+    // 参加者シェイプをキャンバスに追加
+    await modeling.createShape(participantShape, { x: 100, y: 100 }, rootElement);
+
+    setElements((prevElements) => [
+      ...prevElements,
+      { id: participant.id, type: participant.$type, name: participantName },
+    ]);
+  }
+  updateElements();
+};
 
   // タスクの追加
   const handleTaskSubmit = async (taskName: string) => {
