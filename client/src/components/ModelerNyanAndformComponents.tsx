@@ -15,6 +15,7 @@ import EndEvent from "@/components/FormEventdemo/EndEvent";
 import ConnectionForm from "@/components/ConnectionForm";
 import IntermediateThrowEventForm from "@/components/IntermediateThrowEvent/IntermediateThrowEvent";
 import IntermediateCatchEventForm from "@/components/IntermediateCatchEvent/IntermediateCatchEvent";
+import LaneSelector from '@/components/LaneSelector/LaneSelector';
 
 // rootWrapのスタイル
 const rootWrapStyles = css`
@@ -64,9 +65,17 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const bpmnModelerRef = useRef<any>(null);
 
+  // 
   const [elements, setElements] = useState<
     Array<{ id: string; type: string; name: string }>
   >([]);
+
+  // 選択されたレーンのIDを管理するステート
+  const [selectedLaneId, setSelectedLaneId] = useState<string | null>(null);
+  const handleLaneClick = (laneId: string) => {
+    setSelectedLaneId(laneId);
+  };
+  const [lanes, setLanes] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
     // BPMNモデラーの初期化
@@ -178,6 +187,14 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
     const modeler = bpmnModelerRef.current;
     if (modeler) {
       const elementRegistry = modeler.get("elementRegistry"); // 要素のレジストリを取得
+      const participants = elementRegistry.filter((element: any) => element.type === 'bpmn:Participant');
+      setLanes(
+        participants.map((participant: any) => ({
+          id: participant.id,
+          name: participant.businessObject.name || '',
+        }))
+      );
+
       const elementTypes = [
         "bpmn:StartEvent",
         "bpmn:Task",
@@ -195,6 +212,7 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
           type: element.type,
           name:
             element.businessObject.name || element.type.replace("bpmn:", ""), // 要素の名前を取得（ない場合はタイプから生成）
+          onClick: handleLaneClick, 
         }))
       );
     }
@@ -282,19 +300,20 @@ const handleParticipantSubmit = async (participantName: string) => {
   const handleStartEventSubmit = async (eventName: string) => {
     console.log("イベント名:", eventName);
     const modeler = bpmnModelerRef.current;
-    if (modeler) {
+    if (modeler && selectedLaneId) {
       const elementFactory = modeler.get("elementFactory");
       const modeling = modeler.get("modeling");
       const canvas = modeler.get("canvas");
-
-      const event = elementFactory.createShape({ type: "bpmn:StartEvent" });
-      const eventShape = await modeling.createShape(
-        event,
-        { x: 150, y: 150 },
-        canvas.getRootElement()
-      );
-      modeling.updateProperties(eventShape, { name: eventName });
-      console.log("イベントシェイプ:", eventShape);
+      const elementRegistry = modeler.get("elementRegistry");
+  
+      const laneShape = elementRegistry.get(selectedLaneId);
+  
+      if (laneShape) {
+        const event = elementFactory.createShape({ type: "bpmn:StartEvent" });
+        const eventShape = await modeling.createShape(event, { x: 150, y: 150 }, laneShape);
+        modeling.updateProperties(eventShape, { name: eventName });
+        console.log("イベントシェイプ:", eventShape);
+      }
     }
     updateElements();
   };
@@ -437,7 +456,7 @@ const handleParticipantSubmit = async (participantName: string) => {
         {/* タスク追加フォーム */}
         <TaskForm onSubmit={handleTaskSubmit} />
         {/* スタートイベント追加フォーム */}
-        <StartEvent onSubmit={handleStartEventSubmit} />
+        <StartEvent onSubmit={handleStartEventSubmit} disabled={!selectedLaneId} />
         {/* エンドイベント追加フォーム */}
         <EndEvent onSubmit={handleEndEventSubmit} />
         {/* 中間イベント（投げ）追加フォーム */}
@@ -450,6 +469,11 @@ const handleParticipantSubmit = async (participantName: string) => {
         />
         {/* ニャンキャット追加フォーム */}
         <NyanForm onSubmit={handleNyanSubmit} />
+        <LaneSelector
+          lanes={lanes}
+          selectedLaneId={selectedLaneId}
+          onLaneSelect={setSelectedLaneId}
+        />
         <ConnectionForm elements={elements} onConnect={handleConnect} />
       </div>
     </div>
