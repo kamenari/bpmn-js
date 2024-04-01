@@ -21,14 +21,15 @@ const StartEvent: React.FC<EventFormProps> = ({ onSubmit, disabled }) => {
   return (
     <form onSubmit={handleSubmit}>
       <label htmlFor="eventName">スタートイベント名:</label>
-      <input
+      {/* <input
         type="text"
         id="eventName"
         value={eventName}
         onChange={(e) => setEventName(e.target.value)} // 入力値の変更を監視し、ステートを更新
-        disabled={disabled} // フォームの有効/無効を制御
-      />
-      <button type="submit" disabled={disabled}>追加</button>
+        // disabled={disabled} // フォームの有効/無効を制御
+      /> */}
+      {/* <button type="submit" disabled={disabled}>追加</button> */}
+      <button type="submit" >追加</button>
     </form>
   );
 };

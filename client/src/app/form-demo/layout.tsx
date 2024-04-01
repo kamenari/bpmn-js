@@ -9,9 +9,21 @@ const metadata: Metadata = {
 };
 
 const style = css`
-  .djs-palette {
+  .bjs-powered-by {
     display: none;
   }
+
+  /* .djs-palette {
+    display: none;
+  }
+
+  #save-button {
+    display: none;
+  }
+
+  .subLaneForm {
+    display: none; 
+  }*/
 `;
 
 export default function Layout({ children }: { children: React.ReactNode }) {

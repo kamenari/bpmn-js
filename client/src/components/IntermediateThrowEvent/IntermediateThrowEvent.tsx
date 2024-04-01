@@ -19,7 +19,7 @@ const IntermediateThrowEventForm: React.FC<EventFormProps> = ({ onSubmit }) => {
 
   return (
     <form onSubmit={handleSubmit}>
-      <label htmlFor="eventName">中間イベント（投げ）名:</label>
+      <label htmlFor="eventName">中間イベント（送信）名:</label>
       <input
         type="text"
         id="eventName"

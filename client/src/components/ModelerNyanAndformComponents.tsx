@@ -16,6 +16,9 @@ import ConnectionForm from "@/components/ConnectionForm";
 import IntermediateThrowEventForm from "@/components/IntermediateThrowEvent/IntermediateThrowEvent";
 import IntermediateCatchEventForm from "@/components/IntermediateCatchEvent/IntermediateCatchEvent";
 import LaneSelector from "@/components/LaneSelector/LaneSelector";
+import SubLaneForm from "@/components/FormDemo/SubLaneForm";
+import { is } from "bpmn-js/lib/util/ModelUtil";
+import CanvasToPDF from "./CanvasToPDF/CanvasToPDF";
 
 // rootWrapのスタイル
 const rootWrapStyles = css`
@@ -103,11 +106,68 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
 
     openDiagram(diagramXML);
 
+    // 相互作用のイベントリスナーを追加
+    const eventBus = bpmnModelerRef.current.get("eventBus");
+    const events = [
+      "element.hover",
+      "element.out",
+      "element.click",
+      "element.dblclick",
+      "element.mousedown",
+      "element.mouseup",
+      "shape.move.start",
+      "shape.move.end",
+      "element.changed",
+      "commandStack.shape.create.postExecuted",
+      "commandStack.shape.delete.postExecuted",
+      "commandStack.connection.create.postExecuted",
+      "commandStack.connection.delete.postExecuted",
+    ];
+
+    events.forEach(function (event) {
+      eventBus.on(event, function (e: any) {
+        console.log("Shape created:", e);
+        const element = e.element;
+        if (element) {
+          const elementType = element.type;
+          const elementId = element.id;
+          console.log(event, "on", elementId, elementType);
+
+          // 要素の種類に応じて特定の処理を行う
+          if (is(element, "bpmn:StartEvent")) {
+            console.log("Start event interaction:", event, elementId);
+          } else if (is(element, "bpmn:EndEvent")) {
+            console.log("End event interaction:", event, elementId);
+          } else if (is(element, "bpmn:Task")) {
+            console.log("Task interaction:", event, elementId);
+          } else if (is(element, "bpmn:Lane")) {
+            console.log("Lane interaction:", event, elementId);
+          } else if (is(element, "bpmn:Participant")) {
+            console.log("Participant interaction:", event, elementId);
+          } else if (is(element, "bpmn:IntermediateThrowEvent")) {
+            console.log(
+              "Intermediate throw event interaction:",
+              event,
+              elementId
+            );
+          } else if (is(element, "bpmn:IntermediateCatchEvent")) {
+            console.log(
+              "Intermediate catch event interaction:",
+              event,
+              elementId
+            );
+          }
+        } else {
+          console.log(event, "occurred without element");
+        }
+      });
+    });
+
     // コンポーネントのクリーンアップ時にモデラーを破棄
     return () => {
       bpmnModelerRef.current.destroy();
     };
-  }, []);
+  }, [diagramXML]);
 
   // BPMN図のエクスポート
   const exportDiagram = async () => {
@@ -149,30 +209,35 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
         "bpmn:IntermediateThrowEvent",
         "bpmn:IntermediateCatchEvent",
         "bpmn:Event",
+        "bpmn:EndEvent",
       ],
       "bpmn:Task": [
         "bpmn:Task",
         "bpmn:IntermediateThrowEvent",
         "bpmn:IntermediateCatchEvent",
         "bpmn:Event",
+        "bpmn:EndEvent",
       ],
       "bpmn:IntermediateThrowEvent": [
         "bpmn:Task",
         "bpmn:IntermediateThrowEvent",
         "bpmn:IntermediateCatchEvent",
         "bpmn:Event",
+        "bpmn:EndEvent",
       ],
       "bpmn:IntermediateCatchEvent": [
         "bpmn:Task",
         "bpmn:IntermediateThrowEvent",
         "bpmn:IntermediateCatchEvent",
         "bpmn:Event",
+        "bpmn:EndEvent",
       ],
       "bpmn:Event": [
         "bpmn:Task",
         "bpmn:IntermediateThrowEvent",
         "bpmn:IntermediateCatchEvent",
         "bpmn:Event",
+        "bpmn:EndEvent",
       ],
     };
 
@@ -279,27 +344,184 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
     updateElements();
   };
 
+  // サブレーンの高さを表す定数
+  const SUB_LANE_HEIGHT = 100;
+
+  const handleAddSubLane = async (subLaneName: string) => {
+    // bpmnModelerRefからmodelerインスタンスを取得
+    const modeler = bpmnModelerRef.current;
+
+    // modelerまたはselectedLaneIdが未定義の場合はエラーをログに出力して処理を終了
+    if (!modeler || !selectedLaneId) {
+      console.error("Modeler or selected lane is undefined.");
+      return;
+    }
+
+    // modelerからelementRegistryとelementFactoryを取得
+    const elementRegistry = modeler.get("elementRegistry");
+    const elementFactory = modeler.get("elementFactory");
+
+    // selectedLaneIdに対応するレーンシェイプをelementRegistryから取得
+    const laneShape = elementRegistry.get(selectedLaneId);
+
+    // レーンシェイプが未定義の場合はエラーをログに出力して処理を終了
+    if (!laneShape) {
+      console.error("Selected lane shape is undefined.");
+      return;
+    }
+
+    // レーンシェイプの親要素であるプロセスを取得
+    const process = laneShape.businessObject.$parent;
+
+    // プロセスのlaneSetsからレーンセットを取得（最初のレーンセットを使用）
+    let laneSet = process.laneSets?.[0];
+
+    // レーンセットが存在しない場合は新しいレーンセットを作成
+    if (!laneSet) {
+      const bpmnFactory = modeler.get("bpmnFactory");
+      laneSet = bpmnFactory.create("bpmn:LaneSet");
+      process.laneSets = [laneSet];
+
+      // modelingを使用してプロセスの子要素としてレーンセットを追加
+      const modeling = modeler.get("modeling");
+      modeling.updateProperties(process, {
+        laneSets: [laneSet],
+      });
+    }
+
+    // 新しいサブレーンを作成
+    const subLane = createSubLane(modeler, laneSet, subLaneName);
+
+    // レーンシェイプの親要素である参加者シェイプを取得
+    const participantShape = elementRegistry.get(laneShape.parent.id);
+
+    // 参加者シェイプのサイズを調整
+    resizeParticipant(modeler, participantShape, SUB_LANE_HEIGHT);
+
+    // プロセスのIDに対応するプロセスシェイプを取得
+    const processShape = elementRegistry.get(process.id);
+
+    // サブレーンのシェイプをプロセスの子要素として追加
+    createSubLaneShape(
+      modeler,
+      elementFactory,
+      subLane,
+      laneShape,
+      processShape
+    );
+
+    // 要素の更新を反映
+    updateElements();
+  };
+
+  const createSubLane = (modeler: any, laneSet: any, subLaneName: string) => {
+    // bpmnFactoryを取得
+    const bpmnFactory = modeler.get("bpmnFactory");
+
+    // 新しいサブレーンを作成
+    const subLane = bpmnFactory.create("bpmn:Lane", {
+      id: `Lane_${Date.now()}`,
+      name: subLaneName,
+    });
+
+    // サブレーンをレーンセットに追加
+    laneSet.lanes = [...(laneSet.lanes || []), subLane];
+
+    return subLane;
+  };
+
+  const resizeParticipant = (
+    modeler: any,
+    participantShape: any,
+    subLaneHeight: number
+  ) => {
+    // modelingを取得
+    const modeling = modeler.get("modeling");
+
+    // 参加者シェイプの子要素からバウンズ情報を取得
+    const bounds = participantShape.children[0].di.bounds;
+
+    // 参加者シェイプのサイズを調整
+    modeling.resizeShape(participantShape, {
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height + subLaneHeight,
+    });
+  };
+
+  const createSubLaneShape = (
+    modeler: any,
+    elementFactory: any,
+    subLane: any,
+    laneShape: any,
+    processShape: any
+  ) => {
+    // elementFactoryを使用して新しいサブレーンシェイプを作成
+    const subLaneShape = elementFactory.createShape({
+      type: "bpmn:Lane",
+      businessObject: subLane,
+    });
+
+    // modelingを取得
+    const modeling = modeler.get("modeling");
+
+    // サブレーンシェイプをプロセスシェイプの子要素として追加
+    modeling.createShape(
+      subLaneShape,
+      {
+        x: laneShape.x,
+        y: laneShape.y + laneShape.height,
+        width: laneShape.width,
+        height: SUB_LANE_HEIGHT,
+      },
+      processShape
+    );
+  };
+
   // タスクの追加
   const handleTaskSubmit = async (taskName: string) => {
     console.log("タスク名:", taskName);
     const modeler = bpmnModelerRef.current;
-    if (modeler) {
+    if (modeler && selectedLaneId) {
       const elementFactory = modeler.get("elementFactory");
       const modeling = modeler.get("modeling");
-      const canvas = modeler.get("canvas");
+      const elementRegistry = modeler.get("elementRegistry");
 
-      const task = elementFactory.createShape({ type: "bpmn:Task" });
-      const taskShape = await modeling.createShape(
-        task,
-        { x: 100, y: 100 },
-        canvas.getRootElement()
-      );
-      modeling.updateProperties(taskShape, { name: taskName });
-      console.log("タスクシェイプ:", taskShape);
-      setElements((prevElements) => [
-        ...prevElements,
-        { id: taskShape.id, type: "bpmn:Task", name: taskName },
-      ]);
+      const laneShape = elementRegistry.get(selectedLaneId);
+
+      if (laneShape) {
+        const task = elementFactory.createShape({ type: "bpmn:Task" });
+
+        // レーン内の要素を取得
+        const laneElements = elementRegistry.filter(
+          (element: any) => element.parent === laneShape
+        );
+
+        // タスクの位置を計算
+        let taskX = laneShape.x + 50; // レーンの左端から50ピクセルの位置に配置
+        let taskY = laneShape.y + 50; // レーンの上端から50ピクセルの位置に配置
+
+        if (laneElements.length > 0) {
+          // レーン内に要素が存在する場合
+          const lastElement = laneElements[laneElements.length - 1];
+          taskX = lastElement.x + lastElement.width + 70; // 最後の要素の右端から30ピクセル右に配置
+          taskY = lastElement.y; // 最後の要素と同じ高さに配置
+        }
+
+        // 指定した位置にタスクを作成
+        const taskShape = await modeling.createShape(
+          task,
+          { x: taskX, y: taskY },
+          laneShape
+        );
+        modeling.updateProperties(taskShape, { name: taskName });
+        console.log("タスクシェイプ:", taskShape);
+        setElements((prevElements) => [
+          ...prevElements,
+          { id: taskShape.id, type: "bpmn:Task", name: taskName },
+        ]);
+      }
     }
     updateElements();
   };
@@ -340,85 +562,139 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
   const handleEndEventSubmit = async (eventName: string) => {
     console.log("イベント名:", eventName);
     const modeler = bpmnModelerRef.current;
-    if (modeler) {
+    if (modeler && selectedLaneId) {
       const elementFactory = modeler.get("elementFactory");
       const modeling = modeler.get("modeling");
-      const canvas = modeler.get("canvas");
+      const elementRegistry = modeler.get("elementRegistry");
 
-      const event = elementFactory.createShape({ type: "bpmn:EndEvent" });
-      const eventShape = await modeling.createShape(
-        event,
-        { x: 150, y: 150 },
-        canvas.getRootElement()
-      );
-      modeling.updateProperties(eventShape, { name: eventName });
-      console.log("イベントシェイプ:", eventShape);
+      const laneShape = elementRegistry.get(selectedLaneId);
+
+      if (laneShape) {
+        const event = elementFactory.createShape({ type: "bpmn:EndEvent" });
+
+        // エンドイベントの位置を計算
+        const eventX = laneShape.x + laneShape.width - 50; // レーンの右端から50ピクセル左の位置に配置
+        const eventY = laneShape.y + laneShape.height - 50; // レーンの下端から50ピクセル上の位置に配置
+
+        // 指定した位置にエンドイベントを作成
+        const eventShape = await modeling.createShape(
+          event,
+          { x: eventX, y: eventY },
+          laneShape
+        );
+        modeling.updateProperties(eventShape, { name: eventName });
+        console.log("イベントシェイプ:", eventShape);
+      }
     }
     updateElements();
   };
 
-  // 中間イベント（投げ）の追加
+  // 中間イベント（送信）の追加
   const handleIntermediateThrowEventSubmit = async (eventName: string) => {
     console.log("イベント名:", eventName);
     const modeler = bpmnModelerRef.current;
-    if (modeler) {
+    if (modeler && selectedLaneId) {
       const elementFactory = modeler.get("elementFactory");
       const modeling = modeler.get("modeling");
-      const canvas = modeler.get("canvas");
+      const elementRegistry = modeler.get("elementRegistry");
       const bpmnFactory = modeler.get("bpmnFactory");
 
-      const event = elementFactory.createShape({
-        type: "bpmn:IntermediateThrowEvent",
-      });
-      const eventShape = await modeling.createShape(
-        event,
-        { x: 150, y: 150 },
-        canvas.getRootElement()
-      );
-      modeling.updateProperties(eventShape, { name: eventName });
+      const laneShape = elementRegistry.get(selectedLaneId);
 
-      // メッセージイベント定義の追加
-      const messageEventDefinition = bpmnFactory.create(
-        "bpmn:MessageEventDefinition"
-      );
-      modeling.updateProperties(eventShape, {
-        eventDefinitions: [messageEventDefinition],
-      });
+      if (laneShape) {
+        const event = elementFactory.createShape({
+          type: "bpmn:IntermediateThrowEvent",
+        });
 
-      console.log("イベントシェイプ:", eventShape);
+        // レーン内の要素を取得
+        const laneElements = elementRegistry.filter(
+          (element: any) => element.parent === laneShape
+        );
+
+        // 中間イベント（送信）の位置を計算
+        let eventX = laneShape.x + 50; // レーンの左端から50ピクセルの位置に配置
+        let eventY = laneShape.y + 70; // レーンの上端から50ピクセルの位置に配置
+
+        if (laneElements.length > 0) {
+          // レーン内に要素が存在する場合
+          const lastElement = laneElements[laneElements.length - 1];
+          eventX = lastElement.x + lastElement.width + 30; // 最後の要素の右端から30ピクセル右に配置
+          eventY = lastElement.y; // 最後の要素と同じ高さに配置
+        }
+
+        // 指定した位置に中間イベント（送信）を作成
+        const eventShape = await modeling.createShape(
+          event,
+          { x: eventX, y: eventY },
+          laneShape
+        );
+        modeling.updateProperties(eventShape, { name: eventName });
+
+        // メッセージイベント定義の追加
+        const messageEventDefinition = bpmnFactory.create(
+          "bpmn:MessageEventDefinition"
+        );
+        modeling.updateProperties(eventShape, {
+          eventDefinitions: [messageEventDefinition],
+        });
+
+        console.log("イベントシェイプ:", eventShape);
+      }
     }
     updateElements();
   };
 
-  // 中間イベント（受け）の追加
+  // 中間イベント（受信）の追加
   const handleIntermediateCatchEventSubmit = async (eventName: string) => {
     console.log("イベント名:", eventName);
     const modeler = bpmnModelerRef.current;
-    if (modeler) {
+    if (modeler && selectedLaneId) {
       const elementFactory = modeler.get("elementFactory");
       const modeling = modeler.get("modeling");
-      const canvas = modeler.get("canvas");
+      const elementRegistry = modeler.get("elementRegistry");
       const bpmnFactory = modeler.get("bpmnFactory");
 
-      const event = elementFactory.createShape({
-        type: "bpmn:IntermediateCatchEvent",
-      });
-      const eventShape = await modeling.createShape(
-        event,
-        { x: 150, y: 150 },
-        canvas.getRootElement()
-      );
-      modeling.updateProperties(eventShape, { name: eventName });
+      const laneShape = elementRegistry.get(selectedLaneId);
 
-      // メッセージイベント定義の追加
-      const messageEventDefinition = bpmnFactory.create(
-        "bpmn:MessageEventDefinition"
-      );
-      modeling.updateProperties(eventShape, {
-        eventDefinitions: [messageEventDefinition],
-      });
+      if (laneShape) {
+        const event = elementFactory.createShape({
+          type: "bpmn:IntermediateCatchEvent",
+        });
 
-      console.log("イベントシェイプ:", eventShape);
+        // レーン内の要素を取得
+        const laneElements = elementRegistry.filter(
+          (element: any) => element.parent === laneShape
+        );
+
+        // 中間イベント（受信）の位置を計算
+        let eventX = laneShape.x + 50; // レーンの左端から50ピクセルの位置に配置
+        let eventY = laneShape.y + 50; // レーンの上端から50ピクセルの位置に配置
+
+        if (laneElements.length > 0) {
+          // レーン内に要素が存在する場合
+          const lastElement = laneElements[laneElements.length - 1];
+          eventX = lastElement.x + lastElement.width + 30; // 最後の要素の右端から30ピクセル右に配置
+          eventY = lastElement.y; // 最後の要素と同じ高さに配置
+        }
+
+        // 指定した位置に中間イベント（受信）を作成
+        const eventShape = await modeling.createShape(
+          event,
+          { x: eventX, y: eventY },
+          laneShape
+        );
+        modeling.updateProperties(eventShape, { name: eventName });
+
+        // メッセージイベント定義の追加
+        const messageEventDefinition = bpmnFactory.create(
+          "bpmn:MessageEventDefinition"
+        );
+        modeling.updateProperties(eventShape, {
+          eventDefinitions: [messageEventDefinition],
+        });
+
+        console.log("イベントシェイプ:", eventShape);
+      }
     }
     updateElements();
   };
@@ -466,7 +742,7 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
           laneShape
         );
         modeling.updateProperties(createdShape, {
-          name: "Nyan Cat",
+          name: "課題",
         });
       }
     }
@@ -482,36 +758,40 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
         <button id="save-button" css={saveButtonStyles} onClick={exportDiagram}>
           Print to Console
         </button>
+        {/* PDFダウンロードボタン */}
+        <CanvasToPDF canvasId="canvas" />
       </div>
       <div css={formStyles}>
         {/* 参加者追加フォーム */}
         <ParticipantForm onSubmit={handleParticipantSubmit} />
-        {/* タスク追加フォーム */}
-        <TaskForm onSubmit={handleTaskSubmit} />
         {/* レーンセレクター */}
         <LaneSelector
           lanes={lanes}
           selectedLaneId={selectedLaneId}
           onLaneSelect={setSelectedLaneId}
         />
+        {/* サブレーン追加フォーム */}
+        <SubLaneForm onSubmit={handleAddSubLane} />
         {/* スタートイベント追加フォーム */}
         <StartEvent
           onSubmit={handleStartEventSubmit}
           disabled={!selectedLaneId}
         />
-        {/* エンドイベント追加フォーム */}
-        <EndEvent onSubmit={handleEndEventSubmit} />
-        {/* 中間イベント（投げ）追加フォーム */}
+        {/* タスク追加フォーム */}
+        <TaskForm onSubmit={handleTaskSubmit} />
+        {/* 中間イベント（送信）追加フォーム */}
         <IntermediateThrowEventForm
           onSubmit={handleIntermediateThrowEventSubmit}
         />
-        {/* 中間イベント（受け）追加フォーム */}
+        {/* 中間イベント（受信）追加フォーム */}
         <IntermediateCatchEventForm
           onSubmit={handleIntermediateCatchEventSubmit}
         />
         {/* ニャンキャット追加フォーム */}
         <NyanForm onSubmit={handleNyanSubmit} />
-
+        {/* エンドイベント追加フォーム */}
+        <EndEvent onSubmit={handleEndEventSubmit} />
+        {/* コネクションフォーム */}
         <ConnectionForm elements={elements} onConnect={handleConnect} />
       </div>
     </div>

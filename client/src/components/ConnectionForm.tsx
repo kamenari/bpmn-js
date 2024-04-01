@@ -30,8 +30,8 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ elements, onConnect }) 
 
   // 接続先として有効な要素タイプの配列（この配列に含まれる要素タイプが接続先として選択可能）
   const targetTypes = [
-    'bpmn:Task',
     'bpmn:EndEvent',
+    'bpmn:Task',
     'bpmn:IntermediateThrowEvent',
     'bpmn:IntermediateCatchEvent',
     'bpmn:Event',

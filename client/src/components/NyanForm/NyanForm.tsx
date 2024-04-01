@@ -12,7 +12,7 @@ const NyanForm: React.FC<NyanFormProps> = ({ onSubmit }) => {
 
   return (
     <form onSubmit={handleSubmit}>
-      <button type="submit">ニャンキャットを追加</button>
+      <button type="submit">課題を追加</button>
     </form>
   );
 };

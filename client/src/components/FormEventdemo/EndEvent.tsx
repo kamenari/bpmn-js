@@ -20,12 +20,12 @@ const EndEventForm: React.FC<EventFormProps> = ({ onSubmit }) => {
   return (
     <form onSubmit={handleSubmit}>
       <label htmlFor="eventName">エンドイベント名:</label>
-      <input
+      {/* <input
         type="text"
         id="eventName"
         value={eventName}
         onChange={(e) => setEventName(e.target.value)} // 入力値の変更を監視し、ステートを更新
-      />
+      /> */}
       <button type="submit">追加</button>
     </form>
   );

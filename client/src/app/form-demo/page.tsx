@@ -17,7 +17,7 @@ const initialXml = `<?xml version="1.0" encoding="UTF-8"?>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>`;
 
-const bpmnJs: React.FC = () => {
+const BpmnJs: React.FC = () => {
   // BPMN図のXMLを管理するステート
   const [xml, setXml] = useState(initialXml);
 
@@ -25,4 +25,4 @@ const bpmnJs: React.FC = () => {
   return <ModelerNyanAndformComponents xml={xml} onXmlChange={setXml} />;
 };
 
-export default bpmnJs;
+export default BpmnJs;

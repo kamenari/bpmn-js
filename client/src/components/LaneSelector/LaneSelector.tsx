@@ -11,13 +11,13 @@ interface LaneSelectorProps {
 const LaneSelector: React.FC<LaneSelectorProps> = ({ lanes, selectedLaneId, onLaneSelect }) => {
   return (
     <div>
-      <label htmlFor="laneSelector">レーンを選択:</label>
+      <label htmlFor="laneSelector">フェーズを選択:</label>
       <select
         id="laneSelector"
         value={selectedLaneId || ''}
         onChange={(e) => onLaneSelect(e.target.value)}
       >
-        <option value="">-- レーンを選択 --</option>
+        <option value="">-- フェーズを選択 --</option>
         {lanes.map((lane) => (
           <option key={lane.id} value={lane.id}>
             {lane.name}

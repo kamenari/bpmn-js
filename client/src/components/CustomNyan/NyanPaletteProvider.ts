@@ -20,7 +20,7 @@ export default function NyanPaletteProvider(palette: any, create: any, elementFa
         'create.nyan-cat': {
           group: 'activity', // エントリを追加するパレットのグループ
           className: 'icon-nyan-cat', // エントリのアイコンに使用するCSSクラス。実際には適切なCSSを定義する必要があります。
-          title: 'Create Nyan Cat', // ツールチップテキスト
+          title: 'Create 課題', // ツールチップテキスト
           action: {
             dragstart: createNyanCat,
             click: createNyanCat

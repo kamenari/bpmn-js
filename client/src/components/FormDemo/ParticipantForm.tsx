@@ -19,7 +19,7 @@ const ParticipantForm: React.FC<ParticipantFormProps> = ({ onSubmit }) => {
 
   return (
     <form onSubmit={handleSubmit}>
-      <label htmlFor="participantName">役割名:</label>
+      <label htmlFor="participantName">フェーズ名:</label>
       <input
         type="text"
         id="participantName"
