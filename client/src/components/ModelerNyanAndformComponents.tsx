@@ -5,7 +5,7 @@ import BpmnJS from "bpmn-js/dist/bpmn-modeler.production.min.js";
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn.css";
 import "bpmn-js/dist/assets/diagram-js.css";
 import "bpmn-js/dist/assets/bpmn-js.css";
-import diagramXML from "@/components/FormDemo/diagram";
+import diagramXML from "@/components/diagram";
 import nyanRenderModule from "@/components/CustomNyan/nyanRenderModule";
 import NyanForm from "@/components/NyanForm/NyanForm";
 import ParticipantForm from "@/components/FormDemo/ParticipantForm";
@@ -18,7 +18,8 @@ import IntermediateCatchEventForm from "@/components/IntermediateCatchEvent/Inte
 import LaneSelector from "@/components/LaneSelector/LaneSelector";
 import SubLaneForm from "@/components/FormDemo/SubLaneForm";
 import { is } from "bpmn-js/lib/util/ModelUtil";
-import CanvasToPDF from "./CanvasToPDF/CanvasToPDF";
+import CanvasToPDF from "@/components/CanvasToPDF/CanvasToPDF";
+import { jsPDF } from "jspdf";
 
 // rootWrapのスタイル
 const rootWrapStyles = css`
@@ -749,6 +750,81 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
     updateElements();
   };
 
+  // BPMNのXMLデータを取得する関数
+  const getBpmnXml = async () => {
+    try {
+      const result = await bpmnModelerRef.current.saveXML({ format: true });
+      return result.xml;
+    } catch (err) {
+      console.error("could not save BPMN 2.0 diagram", err);
+      throw err;
+    }
+  };
+
+  const handleExportPdf = async () => {
+    if (bpmnModelerRef.current && canvasRef.current) {
+      try {
+        console.log("ビューアのサイズを取得");
+        const canvas = bpmnModelerRef.current.get("canvas");
+        const viewportElement = canvas._svg.querySelector(".viewport");
+        const viewportBBox = viewportElement.getBoundingClientRect();
+        const viewportWidth = viewportBBox.width;
+        const viewportHeight = viewportBBox.height;
+  
+        console.log("PDFドキュメントを作成");
+        const scale = 6; // 解像度を設定
+        const pdf = new jsPDF("l", "px", [
+          viewportWidth * scale,
+          viewportHeight * scale,
+        ]);
+  
+        console.log("SVGをキャンバスに変換");
+        const svgResult = await bpmnModelerRef.current.saveSVG();
+        const svgString = svgResult.svg;
+        const svgData = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgString);
+        const svgImage = new Image();
+        svgImage.src = svgData;
+  
+        await new Promise<void>((resolve) => {
+          svgImage.onload = async () => {
+            const canvas = document.createElement("canvas");
+            const canvasWidth = viewportWidth * scale;
+            const canvasHeight = viewportHeight * scale;
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            const context = canvas.getContext("2d");
+            
+            if (context) {
+              context.scale(scale, scale);
+              context.drawImage(svgImage, 0, 0, viewportWidth, viewportHeight);
+  
+              console.log("キャンバスをPDFに追加");
+              const imgData = canvas.toDataURL("image/png");
+              pdf.addImage(
+                imgData,
+                "PNG",
+                0,
+                0,
+                viewportWidth * scale,
+                viewportHeight * scale
+              );
+  
+              console.log("PDFをダウンロード");
+              pdf.save("diagram.pdf");
+              console.log("PDFのダウンロードが完了しました");
+              resolve();
+            } else {
+              console.error("2Dレンダリングコンテキストの取得に失敗しました。");
+              resolve();
+            }
+          };
+        });
+      } catch (err) {
+        console.error("BPMN図のPDF変換エラー:", err);
+      }
+    }
+  };
+
   return (
     <div css={rootWrapStyles}>
       <div css={modelerContainerStyles}>
@@ -759,7 +835,7 @@ const ModelerPage: React.FC<BpmnModelerProps> = ({ xml, onXmlChange }) => {
           Print to Console
         </button>
         {/* PDFダウンロードボタン */}
-        <CanvasToPDF canvasId="canvas" />
+        <CanvasToPDF onExportPdf={handleExportPdf} />
       </div>
       <div css={formStyles}>
         {/* 参加者追加フォーム */}
